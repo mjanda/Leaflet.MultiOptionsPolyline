@@ -18,15 +18,17 @@
 L.MultiOptionsPolyline = L.FeatureGroup.extend({
 
     initialize: function (latlngs, options) {
-        var copyBaseOptions = options.multiOptions.copyBaseOptions;
-
         this._layers = {};
+        this._latlngs = latlngs;
+
         this._options = options;
+
+        var copyBaseOptions = options.multiOptions.copyBaseOptions;
         if (copyBaseOptions === undefined || copyBaseOptions) {
             this._copyBaseOptions();
         }
 
-        this.setLatLngs(latlngs);
+        this.render();
     },
 
     _copyBaseOptions: function () {
@@ -44,14 +46,26 @@ L.MultiOptionsPolyline = L.FeatureGroup.extend({
     },
 
     setLatLngs: function (latlngs) {
-        var i, len = latlngs.length,
+        this._latlngs = latlngs;
+        this.render();
+    },
+
+    setOptions: function (options) {
+        var copyBaseOptions = options.multiOptions.copyBaseOptions;
+        this._options = options;
+        if (copyBaseOptions === undefined || copyBaseOptions) {
+            this._copyBaseOptions();
+        }
+        this.render();
+    },
+
+    render: function () {
+        var i, len = this._latlngs.length,
             multiOptions = this._options.multiOptions,
             optionIdxFn = multiOptions.optionIdxFn,
             fnContext = multiOptions.fnContext || this,
             prevOptionIdx, optionIdx,
             segmentLatlngs;
-
-        this._originalLatlngs = latlngs;
 
         this.eachLayer(function (layer) {
             this.removeLayer(layer);
@@ -59,14 +73,14 @@ L.MultiOptionsPolyline = L.FeatureGroup.extend({
 
         for (i = 1; i < len; ++i) {
             optionIdx = optionIdxFn.call(
-                fnContext, latlngs[i], latlngs[i - 1], i, latlngs);
+                fnContext, this._latlngs[i], this._latlngs[i - 1], i, this._latlngs);
 
             if (i === 1) {
-                segmentLatlngs = [latlngs[0]];
+                segmentLatlngs = [this._latlngs[0]];
                 prevOptionIdx = optionIdx;
             }
 
-            segmentLatlngs.push(latlngs[i]);
+            segmentLatlngs.push(this._latlngs[i]);
 
             // is there a change in options or is it the last point?
             if (prevOptionIdx !== optionIdx || i === len - 1) {
@@ -78,7 +92,7 @@ L.MultiOptionsPolyline = L.FeatureGroup.extend({
                 }
 
                 prevOptionIdx = optionIdx;
-                segmentLatlngs = [latlngs[i]];
+                segmentLatlngs = [this._latlngs[i]];
             }
         }
 
@@ -86,7 +100,7 @@ L.MultiOptionsPolyline = L.FeatureGroup.extend({
     },
 
     getLatLngs: function () {
-        return this._originalLatlngs;
+        return this._latlngs;
     },
 
     getLatLngsSegments: function () {
